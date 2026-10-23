@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>أداة المسافة والاتجاه</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1220">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --bg:#0b1220; --panel:#121b2e; --panel2:#17213a; --border:#243352;
+    --text:#e8edf7; --text-dim:#9fb0cc; --accent:#4ade80; --accent2:#60a5fa;
+    --danger:#f87171; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+    padding-top:max(14px,env(safe-area-inset-top,0px));
+    padding-bottom:max(14px,env(safe-area-inset-bottom,0px));
+  }
+  h1{font-size:19px;font-weight:700;margin:0 0 4px}
+  .sub{color:var(--text-dim);font-size:13px;margin:0 0 16px}
+  .status{
+    display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);
+    margin-bottom:14px;padding:8px 12px;background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex:none}
+  .dot.on{background:var(--accent)}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px; margin-bottom:14px;
+  }
+  .card h2{font-size:14px;margin:0 0 10px;color:var(--text-dim);font-weight:600}
+  .point-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .point-row:last-child{margin-bottom:0}
+  .point-dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .point-dot.a{background:var(--accent)}
+  .point-dot.b{background:var(--accent2)}
+  .inputs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-width:0}
+  label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:4px}
+  input[type=number], input[type=text]{
+    width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:9px 10px; font-size:14px; min-width:0;
+  }
+  input:focus{outline:2px solid var(--accent2); border-color:transparent}
+  button{
+    font-family:inherit; cursor:pointer; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:14px; padding:11px 16px;
+  }
+  button:active{transform:scale(.98)}
+  .btn-primary{
+    background:var(--accent); color:#06250f; border:none; font-weight:700; width:100%;
+    padding:13px; font-size:15px; margin-top:4px;
+  }
+  .btn-row{display:flex;gap:8px;margin-top:10px}
+  .btn-row button{flex:1}
+  #map{
+    width:100%; height:0; padding-bottom:62%; position:relative; border-radius:var(--radius);
+    overflow:hidden; border:1px solid var(--border); margin-bottom:14px; display:none;
+  }
+  #map.show{display:block}
+  #map > .leaflet-container{position:absolute; inset:0; background:#0b1220}
+  .results{display:none; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px}
+  .results.show{display:grid}
+  .stat{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:12px 10px; text-align:center;
+  }
+  .stat .lbl{font-size:11px;color:var(--text-dim);margin-bottom:4px}
+  .stat .val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat .unit{font-size:11px;color:var(--text-dim)}
+  .hint{font-size:12px;color:var(--text-dim);line-height:1.6;margin-top:4px}
+  .elev-note{font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:6px;margin-top:6px}
+  .pill{
+    display:inline-block;font-size:11px;background:var(--panel2);border:1px solid var(--border);
+    color:var(--text-dim); padding:3px 9px; border-radius:999px;
+  }
+  .swap{background:none;border:none;color:var(--accent2);font-size:12px;padding:4px 8px}
+  footer{text-align:center;color:var(--text-dim);font-size:11px;margin-top:10px;padding-bottom:10px}
+</style>
+</head>
+<body>
+
+<h1>أداة المسافة والاتجاه</h1>
+<p class="sub">أدخل إحداثيات نقطتين لعرضهما على خريطة أقمار صناعية وحساب المسافة والزاوية وفرق الارتفاع بينهما.</p>
+
+<div class="status" id="netStatus">
+  <span class="dot" id="netDot"></span>
+  <span id="netText">جاري التحقق من الاتصال...</span>
+</div>
+
+<div class="card">
+  <h2>الإحداثيات</h2>
+
+  <div class="point-row">
+    <span class="point-dot a"></span>
+    <div class="inputs-grid">
+      <div>
+        <label for="latA">خط العرض A (Lat)</label>
+        <input type="number" id="latA" step="any" placeholder="مثال: 15.3694">
+      </div>
+      <div>
+        <label for="lonA">خط الطول A (Lon)</label>
+        <input type="number" id="lonA" step="any" placeholder="مثال: 44.1910">
+      </div>
+    </div>
+  </div>
+
+  <div class="point-row">
+    <span class="point-dot b"></span>
+    <div class="inputs-grid">
+      <div>
+        <label for="latB">خط العرض B (Lat)</label>
+        <input type="number" id="latB" step="any" placeholder="مثال: 15.3500">
+      </div>
+      <div>
+        <label for="lonB">خط الطول B (Lon)</label>
+        <input type="number" id="lonB" step="any" placeholder="مثال: 44.2100">
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button id="useLocBtn" type="button">📍 موقعي الحالي → A</button>
+    <button id="swapBtn" type="button" class="swap">⇄ تبديل A/B</button>
+  </div>
+
+  <button class="btn-primary" id="okBtn" type="button">عرض على الخريطة OK</button>
+  <p class="hint" id="errMsg" style="color:var(--danger);display:none"></p>
+</div>
+
+<div id="map"></div>
+
+<div class="results" id="results">
+  <div class="stat">
+    <div class="lbl">المسافة</div>
+    <div class="val" id="rDist">—</div>
+    <div class="unit">متر</div>
+  </div>
+  <div class="stat">
+    <div class="lbl">الزاوية (Bearing)</div>
+    <div class="val" id="rBear">—</div>
+    <div class="unit">درجة من الشمال</div>
+  </div>
+  <div class="stat">
+    <div class="lbl">فرق الارتفاع</div>
+    <div class="val" id="rElev">—</div>
+    <div class="unit">متر</div>
+  </div>
+</div>
+<div class="elev-note" id="elevNote" style="display:none">
+  <span class="pill" id="elevPill">—</span>
+</div>
+
+<div class="card" id="tipCard">
+  <h2>كيف تعمل</h2>
+  <p class="hint">
+    • اضغط OK لعرض النقطتين على الخريطة.<br>
+    • يمكنك سحب أي علامة (A أو B) مباشرة على الخريطة لتغيير موقعها، وستتحدث الحقول والنتائج تلقائيًا.<br>
+    • أول مرة تحتاج إنترنت لتحميل صور الخريطة والارتفاع. بعد ذلك تعمل المناطق التي زرتها بدون إنترنت.
+  </p>
+</div>
+
+<footer>يعمل بدون إنترنت بعد أول تحميل لكل منطقة</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
