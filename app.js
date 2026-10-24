@@ -1,7 +1,7 @@
 let map, markerA, markerB, line, measureLine, measureDestinationMarker, measureDestination = null, pendingDestination = null, pressTimer = null, pressStart = null;
 const R=6371000, el=id=>document.getElementById(id);
 const latA=el('latA'),lonA=el('lonA'),latB=el('latB'),lonB=el('lonB'),okBtn=el('okBtn'),useLocBtn=el('useLocBtn'),swapBtn=el('swapBtn');
-const errMsg=el('errMsg'),mapDiv=el('map'),results=el('results'),rDist=el('rDist'),rBear=el('rBear'),rElev=el('rElev'),netDot=el('netDot'),netText=el('netText'),elevNote=el('elevNote'),elevPill=el('elevPill'),destinationAction=el('destinationAction'),clearMeasureBtn=el('clearMeasureBtn'),centerCursor=el('centerCursor');
+const errMsg=el('errMsg'),mapDiv=el('map'),mapWrap=el('map-wrap'),results=el('results'),rDist=el('rDist'),rBear=el('rBear'),rElev=el('rElev'),netDot=el('netDot'),netText=el('netText'),elevNote=el('elevNote'),elevPill=el('elevPill'),destinationAction=el('destinationAction'),clearMeasureBtn=el('clearMeasureBtn'),centerCursor=el('centerCursor');
 const mainLayout=el('mainLayout'),calcScreen=el('calcScreen'),openCalcBtn=el('openCalcBtn'),backMapBtn=el('backMapBtn'),calcOkBtn=el('calcOkBtn');
 const calcDistance=el('calcDistance'),calcElevation=el('calcElevation'),calcBearing=el('calcBearing'),calcType=el('calcType'),calcNumber=el('calcNumber'),calcOutput=el('calcOutput'),outAdjusted=el('outAdjusted'),outAngle=el('outAngle'),outMapAngle=el('outMapAngle'),outTable=el('outTable'),outTableDetail=el('outTableDetail'),calcError=el('calcError');
 function updateNetStatus(){const online=navigator.onLine;netDot.classList.toggle('on',online);netText.textContent=online?'متصل — يمكن تحميل الخرائط والارتفاعات':'بدون إنترنت — المناطق المحمّلة مسبقًا فقط'}
@@ -39,7 +39,7 @@ function clearLiveMeasure(){if(measureLine)map.removeLayer(measureLine);if(measu
 okBtn.addEventListener('click',()=>{try{const[a,b]=inputs();validate(a,b);showPoints(a,b,true);errMsg.style.display='none'}catch(e){errMsg.textContent=e.message;errMsg.style.display='block'}});
 swapBtn.addEventListener('click',()=>{[latA.value,latB.value]=[latB.value,latA.value];[lonA.value,lonB.value]=[lonB.value,lonA.value];if(markerA&&markerB)showPoints(inputs()[0],inputs()[1],true)});
 useLocBtn.addEventListener('click',()=>{if(!navigator.geolocation){errMsg.textContent='المتصفح لا يدعم تحديد الموقع';errMsg.style.display='block';return}useLocBtn.textContent='جارِ تحديد الموقع...';navigator.geolocation.getCurrentPosition(p=>{latA.value=p.coords.latitude.toFixed(6);lonA.value=p.coords.longitude.toFixed(6);useLocBtn.textContent='موقعي الحالي → A'},()=>{errMsg.textContent='تعذر الحصول على الموقع؛ اسمح للمتصفح بالوصول للموقع';errMsg.style.display='block';useLocBtn.textContent='موقعي الحالي → A'})});
-ensureMap();map.setView([15.3694,44.1910],10);centerCursor.addEventListener('click',e=>{e.stopPropagation();openDestinationAction(map.getCenter())});
+ensureMap();map.setView([15.3694,44.1910],10);const openFromCenter=()=>openDestinationAction(map.getCenter());centerCursor.addEventListener('pointerup',e=>{e.stopPropagation();openFromCenter()});mapWrap.addEventListener('click',e=>{const r=mapDiv.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2);if(Math.hypot(x,y)<38)openFromCenter()});
 const sampleTable=[
   {distance:500,type:'A',number:1,output:12},
   {distance:500,type:'A',number:2,output:15},
