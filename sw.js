@@ -3,7 +3,7 @@ const TILE_CACHE = 'geo-tool-tiles-v1';
 
 const SHELL_FILES = [
   './index.html',
-  './app.js?v=v11-20261025',
+  './app.js?v=v12-20261025',
   './manifest.json',
   './icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
