@@ -3,7 +3,7 @@ const R=6371000, el=id=>document.getElementById(id);
 const latA=el('latA'),lonA=el('lonA'),latB=el('latB'),lonB=el('lonB'),okBtn=el('okBtn'),useLocBtn=el('useLocBtn'),swapBtn=el('swapBtn');
 const errMsg=el('errMsg'),mapDiv=el('map'),results=el('results'),rDist=el('rDist'),rBear=el('rBear'),rElev=el('rElev'),netDot=el('netDot'),netText=el('netText'),elevNote=el('elevNote'),elevPill=el('elevPill'),destinationAction=el('destinationAction');
 const mainLayout=el('mainLayout'),calcScreen=el('calcScreen'),openCalcBtn=el('openCalcBtn'),backMapBtn=el('backMapBtn'),calcOkBtn=el('calcOkBtn');
-const calcDistance=el('calcDistance'),calcElevation=el('calcElevation'),calcBearing=el('calcBearing'),calcType=el('calcType'),calcNumber=el('calcNumber'),calcOutput=el('calcOutput'),outAdjusted=el('outAdjusted'),outAngle=el('outAngle'),outTable=el('outTable'),outTableDetail=el('outTableDetail'),calcError=el('calcError');
+const calcDistance=el('calcDistance'),calcElevation=el('calcElevation'),calcBearing=el('calcBearing'),calcType=el('calcType'),calcNumber=el('calcNumber'),calcOutput=el('calcOutput'),outAdjusted=el('outAdjusted'),outAngle=el('outAngle'),outMapAngle=el('outMapAngle'),outTable=el('outTable'),outTableDetail=el('outTableDetail'),calcError=el('calcError');
 function updateNetStatus(){const online=navigator.onLine;netDot.classList.toggle('on',online);netText.textContent=online?'متصل — يمكن تحميل الخرائط والارتفاعات':'بدون إنترنت — المناطق المحمّلة مسبقًا فقط'}
 window.addEventListener('online',updateNetStatus);window.addEventListener('offline',updateNetStatus);updateNetStatus();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -36,9 +36,69 @@ okBtn.addEventListener('click',()=>{try{const[a,b]=inputs();validate(a,b);showPo
 swapBtn.addEventListener('click',()=>{[latA.value,latB.value]=[latB.value,latA.value];[lonA.value,lonB.value]=[lonB.value,lonA.value];if(markerA&&markerB)showPoints(inputs()[0],inputs()[1],true)});
 useLocBtn.addEventListener('click',()=>{if(!navigator.geolocation){errMsg.textContent='المتصفح لا يدعم تحديد الموقع';errMsg.style.display='block';return}useLocBtn.textContent='جارِ تحديد الموقع...';navigator.geolocation.getCurrentPosition(p=>{latA.value=p.coords.latitude.toFixed(6);lonA.value=p.coords.longitude.toFixed(6);useLocBtn.textContent='موقعي الحالي → A'},()=>{errMsg.textContent='تعذر الحصول على الموقع؛ اسمح للمتصفح بالوصول للموقع';errMsg.style.display='block';useLocBtn.textContent='موقعي الحالي → A'})});
 ensureMap();map.setView([15.3694,44.1910],10);
-const sampleTable=[];
-for(let d=50;d<=2000;d+=50){for(const type of ['A','B','C']){for(let n=1;n<=5;n++){const ti=type.charCodeAt(0)-65;sampleTable.push({distance:d,type,number:n,output:Number((d*.12+n*3+ti*5).toFixed(1))})}}}
+const sampleTable=[
+  {distance:500,type:'A',number:1,output:12},
+  {distance:500,type:'A',number:2,output:15},
+  {distance:500,type:'A',number:3,output:18},
+  {distance:500,type:'A',number:4,output:21},
+  {distance:500,type:'A',number:5,output:24},
+  {distance:500,type:'B',number:1,output:14},
+  {distance:500,type:'B',number:2,output:17},
+  {distance:500,type:'B',number:3,output:20},
+  {distance:500,type:'B',number:4,output:23},
+  {distance:500,type:'B',number:5,output:26},
+  {distance:500,type:'C',number:1,output:16},
+  {distance:500,type:'C',number:2,output:19},
+  {distance:500,type:'C',number:3,output:22},
+  {distance:500,type:'C',number:4,output:25},
+  {distance:500,type:'C',number:5,output:28},
+  {distance:1000,type:'A',number:1,output:25},
+  {distance:1000,type:'A',number:2,output:28},
+  {distance:1000,type:'A',number:3,output:31},
+  {distance:1000,type:'A',number:4,output:34},
+  {distance:1000,type:'A',number:5,output:37},
+  {distance:1000,type:'B',number:1,output:27},
+  {distance:1000,type:'B',number:2,output:30},
+  {distance:1000,type:'B',number:3,output:33},
+  {distance:1000,type:'B',number:4,output:36},
+  {distance:1000,type:'B',number:5,output:39},
+  {distance:1000,type:'C',number:1,output:29},
+  {distance:1000,type:'C',number:2,output:32},
+  {distance:1000,type:'C',number:3,output:35},
+  {distance:1000,type:'C',number:4,output:38},
+  {distance:1000,type:'C',number:5,output:41},
+  {distance:1500,type:'A',number:1,output:38},
+  {distance:1500,type:'A',number:2,output:41},
+  {distance:1500,type:'A',number:3,output:44},
+  {distance:1500,type:'A',number:4,output:47},
+  {distance:1500,type:'A',number:5,output:50},
+  {distance:1500,type:'B',number:1,output:40},
+  {distance:1500,type:'B',number:2,output:43},
+  {distance:1500,type:'B',number:3,output:46},
+  {distance:1500,type:'B',number:4,output:49},
+  {distance:1500,type:'B',number:5,output:52},
+  {distance:1500,type:'C',number:1,output:42},
+  {distance:1500,type:'C',number:2,output:45},
+  {distance:1500,type:'C',number:3,output:48},
+  {distance:1500,type:'C',number:4,output:51},
+  {distance:1500,type:'C',number:5,output:54},
+  {distance:2000,type:'A',number:1,output:51},
+  {distance:2000,type:'A',number:2,output:54},
+  {distance:2000,type:'A',number:3,output:57},
+  {distance:2000,type:'A',number:4,output:60},
+  {distance:2000,type:'A',number:5,output:63},
+  {distance:2000,type:'B',number:1,output:53},
+  {distance:2000,type:'B',number:2,output:56},
+  {distance:2000,type:'B',number:3,output:59},
+  {distance:2000,type:'B',number:4,output:62},
+  {distance:2000,type:'B',number:5,output:65},
+  {distance:2000,type:'C',number:1,output:55},
+  {distance:2000,type:'C',number:2,output:58},
+  {distance:2000,type:'C',number:3,output:61},
+  {distance:2000,type:'C',number:4,output:64},
+  {distance:2000,type:'C',number:5,output:67}
+];
 function showCalcScreen(){if(!markerA||!markerB)return;const d=distance(markerA.getLatLng(),markerB.getLatLng()),br=bearing(markerA.getLatLng(),markerB.getLatLng());calcDistance.value=d.toFixed(2);calcBearing.value=br.toFixed(2);const ev=parseFloat(rElev.textContent.replace('+',''));calcElevation.value=Number.isFinite(ev)?ev.toFixed(2):'0';mainLayout.style.display='none';calcScreen.classList.add('show');window.scrollTo({top:0,behavior:'smooth'})}
 function showMapScreen(){calcScreen.classList.remove('show');mainLayout.style.display='grid';setTimeout(()=>{if(map)map.invalidateSize()},100);window.scrollTo({top:0,behavior:'smooth'})}
 openCalcBtn.addEventListener('click',showCalcScreen);backMapBtn.addEventListener('click',showMapScreen);
-calcOkBtn.addEventListener('click',()=>{const d=parseFloat(calcDistance.value),ev=parseFloat(calcElevation.value),br=parseFloat(calcBearing.value),n=parseInt(calcNumber.value,10);calcError.style.display='none';if(![d,ev,br,n].every(Number.isFinite)||d<0||n<1||n>5){calcError.textContent='تحقق من المسافة والارتفاع والزاوية والرقم (من 1 إلى 5)';calcError.style.display='block';return}const adjusted=d+ev/2,angle=br/6,normalized=Math.round(adjusted/50)*50,row=sampleTable.find(x=>x.distance===normalized&&x.type===calcType.value&&x.number===n);outAdjusted.textContent=adjusted.toFixed(2)+' م';outAngle.textContent=angle.toFixed(2)+'°';if(row){outTable.textContent=String(row.output);outTableDetail.textContent=`مطابقة: مسافة ${row.distance} م، النوع ${row.type}، الرقم ${row.number} — بيانات افتراضية للتجربة`}else{outTable.textContent='لا توجد مطابقة';outTableDetail.textContent=`المسافة المعيارية المحسوبة ${normalized} م خارج نطاق الجدول الافتراضي` }calcOutput.classList.add('show')});
+calcOkBtn.addEventListener('click',()=>{const d=parseFloat(calcDistance.value),ev=parseFloat(calcElevation.value),br=parseFloat(calcBearing.value),n=parseInt(calcNumber.value,10);calcError.style.display='none';if(![d,ev,br,n].every(Number.isFinite)||d<0||n<1||n>5){calcError.textContent='تحقق من المسافة والارتفاع والزاوية والرقم (من 1 إلى 5)';calcError.style.display='block';return}const adjusted=d+ev/2,normalized=Math.round(adjusted),mapAngle=br/6,row=sampleTable.find(x=>x.distance===normalized&&x.type===calcType.value&&x.number===n);outAdjusted.textContent=adjusted.toFixed(2)+' م';outMapAngle.textContent=mapAngle.toFixed(2)+'°';if(row){outAngle.textContent=row.output.toFixed(2)+'°';outTable.textContent=`الزاوية ${row.output.toFixed(2)}°`;outTableDetail.textContent=`مطابقة تامة: مسافة ${row.distance} م، النوع ${row.type}، الرقم ${row.number} — بيانات افتراضية للتجربة`}else{outAngle.textContent='—';outTable.textContent='لا توجد مطابقة';outTableDetail.textContent=`المسافة المعدلة بعد التقريب لأقرب متر: ${normalized} م، ولا يوجد لها صف بهذا النوع والرقم` }calcOutput.classList.add('show')});
