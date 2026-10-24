@@ -1,9 +1,9 @@
-const SHELL_CACHE = 'geo-tool-shell-v1';
+const SHELL_CACHE = 'geo-tool-shell-v2';
 const TILE_CACHE = 'geo-tool-tiles-v1';
 
 const SHELL_FILES = [
   './index.html',
-  './app.js',
+  './app.js?v=d32641c',
   './manifest.json',
   './icon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
