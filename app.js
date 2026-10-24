@@ -115,9 +115,9 @@ function findInterpolatedRow(distanceValue,type,number){
   const lower=rows.filter(x=>x.distance<distanceValue).at(-1);
   const upper=rows.find(x=>x.distance>distanceValue);
   if(!lower||!upper)return null;
-  const ratio=(distanceValue-lower.distance)/(upper.distance-lower.distance);
-  const output=lower.output+ratio*(upper.output-lower.output);
-  return{output,kind:'interpolated',lower,upper,ratio};
+  const distanceRatio=(distanceValue-lower.distance)/(upper.distance-lower.distance);
+  const output=lower.output+distanceRatio*(upper.output-lower.output);
+  return{output,kind:'interpolated',lower,upper,ratio:distanceRatio};
 }
 calcOkBtn.addEventListener('click',()=>{
   const d=parseFloat(calcDistance.value),ev=parseFloat(calcElevation.value),br=parseFloat(calcBearing.value),n=parseInt(calcNumber.value,10);
@@ -136,7 +136,7 @@ calcOkBtn.addEventListener('click',()=>{
     if(row.kind==='exact'){
       outTableDetail.textContent=`مطابقة تامة: مسافة ${row.lower.distance} م، النوع ${row.lower.type}، الرقم ${row.lower.number}`;
     }else{
-      outTableDetail.textContent=`استيفاء بين ${row.lower.distance} م (${row.lower.output.toFixed(2)}°) و${row.upper.distance} م (${row.upper.output.toFixed(2)}°)، النسبة ${(row.ratio*100).toFixed(1)}%`;
+      outTableDetail.textContent=`قانون التناسب: (${normalized}−${row.lower.distance})÷(${row.upper.distance}−${row.lower.distance}) = ${(row.ratio*100).toFixed(1)}%، ثم ${row.lower.output.toFixed(2)}° + النسبة × (${row.upper.output.toFixed(2)}−${row.lower.output.toFixed(2)}) = ${row.output.toFixed(2)}°`;
     }
   }else{
     outAngle.textContent='—';
