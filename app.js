@@ -108,5 +108,40 @@ const sampleTable=[
 function showCalcScreen(){let d,br,ev=0;if(markerA&&markerB){d=distance(markerA.getLatLng(),markerB.getLatLng());br=bearing(markerA.getLatLng(),markerB.getLatLng());const parsed=parseFloat(rElev.textContent.replace('+',''));ev=Number.isFinite(parsed)?parsed:0}else if(measureDestination&&map){const center=map.getCenter();d=distance(center,measureDestination);br=bearing(center,measureDestination)}else{return}calcDistance.value=Math.round(d);calcBearing.value=br.toFixed(2);calcElevation.value=ev.toFixed(2);mainLayout.style.display='none';calcScreen.classList.add('show');window.scrollTo({top:0,behavior:'smooth'})}
 function showMapScreen(){calcScreen.classList.remove('show');mainLayout.style.display='grid';setTimeout(()=>{if(map)map.invalidateSize()},100);window.scrollTo({top:0,behavior:'smooth'})}
 openCalcBtn.addEventListener('click',showCalcScreen);backMapBtn.addEventListener('click',showMapScreen);
-calcOkBtn.addEventListener('click',()=>{const d=parseFloat(calcDistance.value),ev=parseFloat(calcElevation.value),br=parseFloat(calcBearing.value),n=parseInt(calcNumber.value,10);calcError.style.display='none';if(![d,ev,br,n].every(Number.isFinite)||d<0||n<1||n>5){calcError.textContent='تحقق من المسافة والارتفاع والزاوية والرقم (من 1 إلى 5)';calcError.style.display='block';return}const adjusted=d+ev/2,normalized=Math.round(adjusted),mapAngle=br/6,row=sampleTable.find(x=>x.distance===normalized&&x.type===calcType.value&&x.number===n);outAdjusted.textContent=adjusted.toFixed(2)+' م';outMapAngle.textContent=mapAngle.toFixed(2)+'°';if(row){outAngle.textContent=row.output.toFixed(2)+'°';outTable.textContent=`الزاوية ${row.output.toFixed(2)}°`;outTableDetail.textContent=`مطابقة تامة: مسافة ${row.distance} م، النوع ${row.type}، الرقم ${row.number} — بيانات افتراضية للتجربة`}else{outAngle.textContent='—';outTable.textContent='لا توجد مطابقة';outTableDetail.textContent=`المسافة المعدلة بعد التقريب لأقرب متر: ${normalized} م، ولا يوجد لها صف بهذا النوع والرقم` }calcOutput.classList.add('show')});
-
+function findInterpolatedRow(distanceValue,type,number){
+  const rows=sampleTable.filter(x=>x.type===type&&x.number===number).sort((a,b)=>a.distance-b.distance);
+  const exact=rows.find(x=>x.distance===distanceValue);
+  if(exact)return{output:exact.output,kind:'exact',lower:exact,upper:exact};
+  const lower=rows.filter(x=>x.distance<distanceValue).at(-1);
+  const upper=rows.find(x=>x.distance>distanceValue);
+  if(!lower||!upper)return null;
+  const ratio=(distanceValue-lower.distance)/(upper.distance-lower.distance);
+  const output=lower.output+ratio*(upper.output-lower.output);
+  return{output,kind:'interpolated',lower,upper,ratio};
+}
+calcOkBtn.addEventListener('click',()=>{
+  const d=parseFloat(calcDistance.value),ev=parseFloat(calcElevation.value),br=parseFloat(calcBearing.value),n=parseInt(calcNumber.value,10);
+  calcError.style.display='none';
+  if(![d,ev,br,n].every(Number.isFinite)||d<0||n<1||n>5){
+    calcError.textContent='تحقق من المسافة والارتفاع والزاوية والرقم (من 1 إلى 5)';
+    calcError.style.display='block';
+    return;
+  }
+  const adjusted=d+ev/2,normalized=Math.round(adjusted),mapAngle=br/6,row=findInterpolatedRow(normalized,calcType.value,n);
+  outAdjusted.textContent=adjusted.toFixed(2)+' م';
+  outMapAngle.textContent=mapAngle.toFixed(2)+'°';
+  if(row){
+    outAngle.textContent=row.output.toFixed(2)+'°';
+    outTable.textContent=`الزاوية ${row.output.toFixed(2)}°`;
+    if(row.kind==='exact'){
+      outTableDetail.textContent=`مطابقة تامة: مسافة ${row.lower.distance} م، النوع ${row.lower.type}، الرقم ${row.lower.number}`;
+    }else{
+      outTableDetail.textContent=`استيفاء بين ${row.lower.distance} م (${row.lower.output.toFixed(2)}°) و${row.upper.distance} م (${row.upper.output.toFixed(2)}°)، النسبة ${(row.ratio*100).toFixed(1)}%`;
+    }
+  }else{
+    outAngle.textContent='—';
+    outTable.textContent='خارج نطاق الجدول';
+    outTableDetail.textContent=`المسافة ${normalized} م خارج النطاق المتاح لهذا النوع والرقم`;
+  }
+  calcOutput.classList.add('show');
+});
