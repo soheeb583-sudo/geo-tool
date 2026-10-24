@@ -2,7 +2,7 @@ let map, markerA, markerB, line, pendingDestination = null, pressTimer = null, p
 const R=6371000, el=id=>document.getElementById(id);
 const latA=el('latA'),lonA=el('lonA'),latB=el('latB'),lonB=el('lonB'),okBtn=el('okBtn'),useLocBtn=el('useLocBtn'),swapBtn=el('swapBtn');
 const errMsg=el('errMsg'),mapDiv=el('map'),results=el('results'),rDist=el('rDist'),rBear=el('rBear'),rElev=el('rElev'),netDot=el('netDot'),netText=el('netText'),elevNote=el('elevNote'),elevPill=el('elevPill'),destinationAction=el('destinationAction');
-const mainLayout=el('mainLayout'),calcScreen=el('calcScreen'),openCalcBtn=el('openCalcBtn'),backMapBtn=el('backMapBtn'),calcOkBtn=el('calcOkBtn'),rotateLeft=el('rotateLeft'),resetRotation=el('resetRotation'),rotateRight=el('rotateRight');
+const mainLayout=el('mainLayout'),calcScreen=el('calcScreen'),openCalcBtn=el('openCalcBtn'),backMapBtn=el('backMapBtn'),calcOkBtn=el('calcOkBtn');
 const calcDistance=el('calcDistance'),calcElevation=el('calcElevation'),calcBearing=el('calcBearing'),calcType=el('calcType'),calcNumber=el('calcNumber'),calcOutput=el('calcOutput'),outAdjusted=el('outAdjusted'),outAngle=el('outAngle'),outMapAngle=el('outMapAngle'),outTable=el('outTable'),outTableDetail=el('outTableDetail'),calcError=el('calcError');
 function updateNetStatus(){const online=navigator.onLine;netDot.classList.toggle('on',online);netText.textContent=online?'متصل — يمكن تحميل الخرائط والارتفاعات':'بدون إنترنت — المناطق المحمّلة مسبقًا فقط'}
 window.addEventListener('online',updateNetStatus);window.addEventListener('offline',updateNetStatus);updateNetStatus();
@@ -103,6 +103,3 @@ function showMapScreen(){calcScreen.classList.remove('show');mainLayout.style.di
 openCalcBtn.addEventListener('click',showCalcScreen);backMapBtn.addEventListener('click',showMapScreen);
 calcOkBtn.addEventListener('click',()=>{const d=parseFloat(calcDistance.value),ev=parseFloat(calcElevation.value),br=parseFloat(calcBearing.value),n=parseInt(calcNumber.value,10);calcError.style.display='none';if(![d,ev,br,n].every(Number.isFinite)||d<0||n<1||n>5){calcError.textContent='تحقق من المسافة والارتفاع والزاوية والرقم (من 1 إلى 5)';calcError.style.display='block';return}const adjusted=d+ev/2,normalized=Math.round(adjusted),mapAngle=br/6,row=sampleTable.find(x=>x.distance===normalized&&x.type===calcType.value&&x.number===n);outAdjusted.textContent=adjusted.toFixed(2)+' م';outMapAngle.textContent=mapAngle.toFixed(2)+'°';if(row){outAngle.textContent=row.output.toFixed(2)+'°';outTable.textContent=`الزاوية ${row.output.toFixed(2)}°`;outTableDetail.textContent=`مطابقة تامة: مسافة ${row.distance} م، النوع ${row.type}، الرقم ${row.number} — بيانات افتراضية للتجربة`}else{outAngle.textContent='—';outTable.textContent='لا توجد مطابقة';outTableDetail.textContent=`المسافة المعدلة بعد التقريب لأقرب متر: ${normalized} م، ولا يوجد لها صف بهذا النوع والرقم` }calcOutput.classList.add('show')});
 
-rotateLeft.addEventListener('click',()=>map&&map.setBearing((map.getBearing()||0)-15));
-resetRotation.addEventListener('click',()=>map&&map.setBearing(0));
-rotateRight.addEventListener('click',()=>map&&map.setBearing((map.getBearing()||0)+15));
